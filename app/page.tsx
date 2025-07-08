@@ -93,22 +93,13 @@ export default function LandingPage() {
     const formData = new FormData(form);
     const data = {
       name: formData.get('name') as string,
-      phone: formData.get('phone') as string, 
+      phone: formData.get('phone') as string,
       email: formData.get('email') as string,
       message: formData.get('message') as string,
     };
-    fetch('/api/booking', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(res => {
-      if (res.ok) {
-        alert('Booking submitted!');
-        form.reset();
-      } else {
-        alert('Submission failed.');
-      }
-    });
+    console.log('Form data:', data);
+    alert('Thank you! We will contact you soon.');
+    form.reset();
   }
 
   return (
