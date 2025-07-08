@@ -17,6 +17,7 @@ const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER.replace(/[^\d]/g, "")}`;
 const CONTACT_EMAIL = "prowinsoftware@gmail.com";
 
 export default function ContactSection() {
+  // Temporary: Replace database save with console.log
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
@@ -27,18 +28,9 @@ export default function ContactSection() {
       email: formData.get('email') as string,
       message: formData.get('message') as string,
     };
-    fetch('/api/booking', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(res => {
-      if (res.ok) {
-        alert('Booking submitted!');
-        form.reset();
-      } else {
-        alert('Submission failed.');
-      }
-    });
+    console.log('Form data:', data);
+    alert('Thank you! We will contact you soon.');
+    form.reset();
   }
 
   return (
