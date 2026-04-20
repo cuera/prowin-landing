@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m notebooklm use bfb720f7-1707-4842-a9b1-64c526a7bfb9)",
+      "Bash(python -m notebooklm ask \"What are the main sections and features across the competitor websites? List each distinct section/page \\(e.g. home, pricing, features, solutions, about, blog, docs, etc.\\) and the key features highlighted.\")",
+      "Bash(python -m notebooklm ask \"What are the main sections and features across the competitor websites? List each distinct top-level page/route \\(e.g. home, pricing, features, solutions, about, blog, docs\\) and the key features/sub-sections highlighted on each. Be specific to the waste management / EPR / e-waste space if relevant.\")",
+      "Bash(python:*)",
+      "Bash(node:*)",
+      "Bash(npm run:*)",
+      "Bash(npx next *)",
+      "Bash(xargs sed *)",
+      "Bash(sed -n '161,162p' /e/delve-landing/src/components/Applications.tsx)",
+      "Bash(sed -n '25,26p' /e/delve-landing/src/components/Platform.tsx)",
+      "Bash(sed -n '21,22p' /e/delve-landing/src/components/Results.tsx)",
+      "Bash(xargs grep *)",
+      "Bash(find *)"
+    ]
+  }
+}

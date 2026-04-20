@@ -1,26 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg-dark: #071519;
+  --color-bg-light: #071519;
+  --color-bg-card-dark: #0A1F25;
+  --color-bg-card-darker: #0D2930;
+  --color-bg-muted: #11343D;
+  --color-bg-gray: #16424D;
+  --color-bg-badge: #1A4E5C;
+
+  --color-accent: #E8503A;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #94A3B8;
+  --color-text-white: #FFFFFF;
+  --color-text-white-60: #FFFFFF99;
+  --color-text-white-50: #FFFFFF80;
+  --color-text-white-40: #FFFFFF66;
+  --color-text-white-30: #FFFFFF4D;
+  --color-text-white-25: #FFFFFF40;
+
+  --color-border-light: #16424D;
+  --color-border-muted: #1A4E5C;
+  --color-border-dark: #206273;
+  --color-border-white-25: #FFFFFF40;
+  --color-border-btn: #FFFFFF25;
+  --color-border-gray: #334155;
+  --color-border-logo: #FFFFFF30;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  .font-primary {
+    font-family: "Inter", sans-serif;
+  }
 }

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waste Collection Route</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    background: transparent;
+    padding: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .wrap {
+    width: 100%;
+    max-width: 540px;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    background: #1e1e26;
+  }
+  svg { display: block; width: 100%; height: auto; }
+
+  /*  ╔═══════════════════════════════════╗
+      ║   ROUTE PATH DRAW-IN             ║
+      ╚═══════════════════════════════════╝ */
+  .route-draw {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: drawIn 2s cubic-bezier(.4,0,.2,1) .4s forwards;
+  }
+  @keyframes drawIn { to { stroke-dashoffset: 0; } }
+
+  /*  ╔═══════════════════════════════════╗
+      ║   TRUCK — 14s master loop        ║
+      ╚═══════════════════════════════════╝
+      Road layout:
+        Full road:   x=208 → x=392  (184px)
+        Left lane:   x=208 → x=298  center = 253
+        Right lane:  x=302 → x=392  center = 347
+        Center line: x=300
+      Truck:
+        Body width = 56px (internal 0→56)
+        translate x = 253 - 28 = 225
+        → truck spans x=225 → x=281
+        → center = x=253 = LEFT LANE CENTER ✓
+      Route path: x=253 (matches truck center)
+  */
+  .truck {
+    animation: truckMove 14s ease-in-out 2.6s infinite;
+  }
+  @keyframes truckMove {
+    0%   { transform: translateY(-220px); opacity: 0; }
+    4%   { transform: translateY(-220px); opacity: 1; }
+    18%  { transform: translateY(0px); }
+    28%  { transform: translateY(0px); }
+    48%  { transform: translateY(400px); }
+    58%  { transform: translateY(400px); }
+    78%  { transform: translateY(800px); opacity: 1; }
+    83%  { transform: translateY(860px); opacity: 0; }
+    100% { transform: translateY(-220px); opacity: 0; }
+  }
+
+  .truck-chassis {
+    animation: bounce .5s ease-in-out infinite alternate;
+  }
+  @keyframes bounce {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-1px); }
+  }
+
+  .wheel-roll {
+    animation: wTick .25s linear infinite;
+  }
+  @keyframes wTick {
+    from { stroke-dashoffset: 0; }
+    to   { stroke-dashoffset: 6; }
+  }
+
+  .hazard {
+    animation: blink .65s ease-in-out infinite alternate;
+  }
+  @keyframes blink { from { opacity: .25; } to { opacity: 1; } }
+
+  /* Factory bin pickup */
+  .factory-bin-anim {
+    transform-origin: center center;
+    animation: fBin 14s ease-in-out 2.6s infinite;
+  }
+  @keyframes fBin {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    20%  { transform: translate(0,0) scale(1); opacity: 1; }
+    23%  { transform: translate(18px,0) scale(1.08); opacity: 1; }
+    26%  { transform: translate(18px,-20px) scale(.45); opacity: .3; }
+    28%  { transform: translate(18px,-20px) scale(0); opacity: 0; }
+    80%  { transform: translate(0,0) scale(0); opacity: 0; }
+    86%  { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(0,0) scale(1); opacity: 1; }
+  }
+
+  /* Home bin pickup */
+  .home-bin-anim {
+    transform-origin: center center;
+    animation: hBin 14s ease-in-out 2.6s infinite;
+  }
+  @keyframes hBin {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    50%  { transform: translate(0,0) scale(1); opacity: 1; }
+    53%  { transform: translate(-18px,0) scale(1.08); opacity: 1; }
+    56%  { transform: translate(-18px,-20px) scale(.45); opacity: .3; }
+    58%  { transform: translate(-18px,-20px) scale(0); opacity: 0; }
+    80%  { transform: translate(0,0) scale(0); opacity: 0; }
+    86%  { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(0,0) scale(1); opacity: 1; }
+  }
+
+  .fill-1 { animation: f1 14s ease-in-out 2.6s infinite; }
+  @keyframes f1 {
+    0% { opacity:0; } 27% { opacity:0; } 29% { opacity:1; }
+    81% { opacity:1; } 83% { opacity:0; } 100% { opacity:0; }
+  }
+  .fill-2 { animation: f2 14s ease-in-out 2.6s infinite; }
+  @keyframes f2 {
+    0% { opacity:0; } 57% { opacity:0; } 59% { opacity:1; }
+    81% { opacity:1; } 83% { opacity:0; } 100% { opacity:0; }
+  }
+
+  .smoke { animation: smokeUp 3.5s ease-out infinite; opacity: 0; }
+  .smoke:nth-child(2) { animation-delay: 1.2s; }
+  .smoke:nth-child(3) { animation-delay: 2.4s; }
+  @keyframes smokeUp {
+    0%   { transform: translateY(0) scale(.5); opacity: 0; }
+    12%  { opacity: .4; }
+    100% { transform: translateY(-60px) scale(2.2); opacity: 0; }
+  }
+
+  .cA { animation: dA 26s linear infinite; }
+  .cB { animation: dB 34s linear infinite; }
+  @keyframes dA { from { transform: translateX(0); } to { transform: translateX(90px); } }
+  @keyframes dB { from { transform: translateX(0); } to { transform: translateX(-70px); } }
+
+  .ring-f { animation: rF 14s ease-out 2.6s infinite; opacity:0; transform-origin:center; }
+  @keyframes rF {
+    0% { opacity:0; transform:scale(.4); } 19% { opacity:0; transform:scale(.4); }
+    20% { opacity:.5; transform:scale(.4); } 27% { opacity:0; transform:scale(2.8); }
+    100% { opacity:0; }
+  }
+  .ring-h { animation: rH 14s ease-out 2.6s infinite; opacity:0; transform-origin:center; }
+  @keyframes rH {
+    0% { opacity:0; transform:scale(.4); } 49% { opacity:0; transform:scale(.4); }
+    50% { opacity:.5; transform:scale(.4); } 57% { opacity:0; transform:scale(2.8); }
+    100% { opacity:0; }
+  }
+
+  .badge-f { animation: bF 14s ease-in-out 2.6s infinite; opacity:0; }
+  @keyframes bF {
+    0% { opacity:0; transform:scale(.5) translateY(5px); }
+    24% { opacity:0; transform:scale(.5) translateY(5px); }
+    26% { opacity:1; transform:scale(1) translateY(0); }
+    30% { opacity:0; transform:scale(.5) translateY(-5px); }
+    100% { opacity:0; }
+  }
+  .badge-h { animation: bH 14s ease-in-out 2.6s infinite; opacity:0; }
+  @keyframes bH {
+    0% { opacity:0; transform:scale(.5) translateY(5px); }
+    54% { opacity:0; transform:scale(.5) translateY(5px); }
+    56% { opacity:1; transform:scale(1) translateY(0); }
+    60% { opacity:0; transform:scale(.5) translateY(-5px); }
+    100% { opacity:0; }
+  }
+
+  .sway { transform-origin: center bottom; animation: sw 4.5s ease-in-out infinite alternate; }
+  .sway:nth-child(even) { animation-delay: -2s; animation-duration: 5.5s; }
+  @keyframes sw { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<svg viewBox="0 0 650 1200" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#bdd8ea"/>
+    <stop offset="100%" stop-color="#ddeede"/>
+  </linearGradient>
+  <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#82b85e"/>
+    <stop offset="100%" stop-color="#5e9a3a"/>
+  </linearGradient>
+  <linearGradient id="roadG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#606068"/>
+    <stop offset="8%" stop-color="#505058"/>
+    <stop offset="92%" stop-color="#505058"/>
+    <stop offset="100%" stop-color="#606068"/>
+  </linearGradient>
+  <linearGradient id="tCab" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#5cc06e"/>
+    <stop offset="100%" stop-color="#3a9e50"/>
+  </linearGradient>
+  <filter id="sh" x="-15%" y="-15%" width="130%" height="130%">
+    <feDropShadow dx="2" dy="3" stdDeviation="3" flood-opacity=".16"/>
+  </filter>
+  <pattern id="gTex" width="24" height="24" patternUnits="userSpaceOnUse">
+    <circle cx="6" cy="10" r=".7" fill="#6aa04a" opacity=".35"/>
+    <circle cx="18" cy="5" r=".5" fill="#6aa04a" opacity=".25"/>
+    <circle cx="12" cy="20" r=".6" fill="#6aa04a" opacity=".3"/>
+  </pattern>
+</defs>
+
+<!-- ═══════ BACKGROUND ═══════ -->
+<rect width="650" height="1200" fill="url(#sky)"/>
+<circle cx="560" cy="65" r="50" fill="#fff8dc" opacity=".2"/>
+<circle cx="560" cy="65" r="26" fill="#ffd54f" opacity=".85"/>
+<g class="cA" opacity=".55">
+  <ellipse cx="110" cy="50" rx="42" ry="15" fill="white"/>
+  <ellipse cx="138" cy="42" rx="28" ry="12" fill="white"/>
+  <ellipse cx="82" cy="45" rx="22" ry="10" fill="white"/>
+</g>
+<g class="cB" opacity=".38">
+  <ellipse cx="420" cy="38" rx="38" ry="13" fill="white"/>
+  <ellipse cx="448" cy="30" rx="24" ry="10" fill="white"/>
+</g>
+
+<!-- ═══════ GRASS ═══════ -->
+<rect x="0" y="100" width="195" height="1100" fill="url(#grass)"/>
+<rect x="0" y="100" width="195" height="1100" fill="url(#gTex)"/>
+<rect x="405" y="100" width="245" height="1100" fill="url(#grass)"/>
+<rect x="405" y="100" width="245" height="1100" fill="url(#gTex)"/>
+
+<!-- ═══════════════════════════════════════════════
+     ROAD — 184px wide, x=208 → x=392
+     Left lane:   208→298  (90px)  center = 253
+     Center gap:  298→302  (4px yellow dashes)
+     Right lane:  302→392  (90px)  center = 347
+     ═══════════════════════════════════════════════ -->
+<!-- Sidewalks -->
+<rect x="195" y="100" width="13" height="1100" fill="#d4cfc5"/>
+<rect x="392" y="100" width="13" height="1100" fill="#d4cfc5"/>
+<rect x="195" y="100" width="1.5" height="1100" fill="#bbb8ae"/>
+<rect x="403.5" y="100" width="1.5" height="1100" fill="#bbb8ae"/>
+
+<!-- Road asphalt -->
+<rect x="208" y="100" width="184" height="1100" fill="url(#roadG)"/>
+
+<!-- White edge lines -->
+<rect x="210" y="100" width="2.5" height="1100" fill="#e8e8e0" opacity=".55"/>
+<rect x="387.5" y="100" width="2.5" height="1100" fill="#e8e8e0" opacity=".55"/>
+
+<!-- Yellow center dashes -->
+<line x1="300" y1="100" x2="300" y2="1200" stroke="#f0c430" stroke-width="3" stroke-dasharray="24 18" opacity=".5"/>
+
+<!-- Lane direction arrows painted on road -->
+<g opacity=".3">
+  <polygon points="253,570 247,582 250,582 250,596 256,596 256,582 259,582" fill="white"/>
+  <polygon points="347,596 341,584 344,584 344,570 350,570 350,584 353,584" fill="white"/>
+</g>
+
+<!-- ═══════ ROUTE PATH in LEFT LANE (x=253) ═══════ -->
+<path class="route-draw"
+      d="M 253 100 L 253 1200"
+      pathLength="100"
+      fill="none" stroke="#4CAF50" stroke-width="2.5"
+      stroke-dasharray="6 8" opacity=".35"/>
+
+<!-- ═══════ HEADER ═══════ -->
+<rect x="0" y="0" width="650" height="100" fill="#2E7D32" opacity=".92"/>
+<rect x="0" y="96" width="650" height="4" fill="#1B5E20"/>
+<text x="325" y="40" text-anchor="middle" font-size="15" fill="white" font-weight="700" letter-spacing="3">♻  WASTE COLLECTION ROUTE  ♻</text>
+<text x="325" y="64" text-anchor="middle" font-size="10.5" fill="#C8E6C9" font-weight="400" letter-spacing="1.8">CLEAN CITY INITIATIVE</text>
+<text x="325" y="84" text-anchor="middle" font-size="8" fill="#A5D6A7" font-weight="300" letter-spacing="1">STOP 1 → INDUSTRY  •  STOP 2 → HOME</text>
+
+<!-- ═══════════════════════════════════════════════
+     STOP 1 — FACTORY (left side)
+     ═══════════════════════════════════════════════ -->
+<g filter="url(#sh)">
+  <rect x="10" y="255" width="172" height="135" fill="#7a8b99" rx="4"/>
+  <rect x="15" y="260" width="162" height="125" fill="#8d9eab" rx="3"/>
+  <polygon points="10,255 96,195 182,255" fill="#4a5a66"/>
+  <polygon points="18,255 96,204 174,255" fill="#5a6b78"/>
+  <rect x="48" y="156" width="20" height="100" fill="#5a6b78" rx="2"/>
+  <rect x="44" y="148" width="28" height="13" fill="#4a5a66" rx="3"/>
+  <rect x="128" y="190" width="16" height="65" fill="#5a6b78" rx="2"/>
+  <rect x="124" y="184" width="24" height="10" fill="#4a5a66" rx="3"/>
+  <rect x="30" y="278" width="24" height="22" fill="#fff9c4" rx="2" opacity=".75"/>
+  <rect x="62" y="278" width="24" height="22" fill="#fff9c4" rx="2" opacity=".7"/>
+  <rect x="94" y="278" width="24" height="22" fill="#fff9c4" rx="2" opacity=".75"/>
+  <rect x="126" y="278" width="24" height="22" fill="#fff9c4" rx="2" opacity=".65"/>
+  <rect x="30" y="310" width="24" height="22" fill="#dde5ea" rx="2" opacity=".55"/>
+  <rect x="62" y="310" width="24" height="22" fill="#dde5ea" rx="2" opacity=".5"/>
+  <rect x="94" y="310" width="24" height="22" fill="#dde5ea" rx="2" opacity=".55"/>
+  <rect x="126" y="310" width="24" height="22" fill="#dde5ea" rx="2" opacity=".5"/>
+  <rect x="60" y="345" width="52" height="40" fill="#3a4a55" rx="3"/>
+  <rect x="63" y="348" width="46" height="34" fill="#30404a" rx="2"/>
+  <line x1="86" y1="348" x2="86" y2="382" stroke="#3a4a55" stroke-width="1.5"/>
+  <rect x="120" y="350" width="50" height="16" fill="#455a64" rx="3"/>
+  <text x="145" y="362" text-anchor="middle" font-size="7" fill="#cfd8dc" font-weight="600" letter-spacing=".4">FACTORY</text>
+  <circle cx="45" cy="362" r="8" fill="none" stroke="#546e7a" stroke-width="1.5"/>
+  <circle cx="45" cy="362" r="3" fill="#546e7a"/>
+</g>
+
+<!-- Smoke -->
+<g transform="translate(58, 148)">
+  <circle class="smoke" r="7" fill="#b0bec5"/>
+  <circle class="smoke" r="9" fill="#cfd8dc"/>
+  <circle class="smoke" r="6" fill="#b0bec5"/>
+</g>
+
+<!-- Factory label -->
+<rect x="35" y="222" width="115" height="24" rx="12" fill="#455a64" opacity=".85"/>
+<text x="92" y="238" text-anchor="middle" font-size="10" fill="white" font-weight="600" letter-spacing=".8">🏭 INDUSTRIAL</text>
+
+<!-- Stop 1 marker on sidewalk -->
+<circle cx="201" cy="365" r="6" fill="#e05545" stroke="white" stroke-width="1.5"/>
+<text x="201" y="368.5" text-anchor="middle" font-size="7" fill="white" font-weight="700">1</text>
+
+<!-- Pulse ring (in truck's lane at x=253) -->
+<circle class="ring-f" cx="253" cy="365" r="18" fill="none" stroke="#4CAF50" stroke-width="2.5"/>
+
+<!-- Factory waste bin — left sidewalk edge -->
+<g class="factory-bin-anim" transform="translate(190, 342)">
+  <rect x="0" y="6" width="20" height="26" fill="#e05545" rx="3"/>
+  <rect x="-2" y="3" width="24" height="5" fill="#c0392b" rx="2"/>
+  <rect x="-2" y="29" width="24" height="4" fill="#c0392b" rx="1"/>
+  <ellipse cx="10" cy="5" rx="8" ry="3.5" fill="#6d4c41"/>
+  <rect x="4" y="-1" width="3.5" height="7" fill="#8d6e63" rx="1"/>
+  <rect x="12" y="0" width="3" height="5.5" fill="#5d4037" rx="1"/>
+  <text x="10" y="22" text-anchor="middle" font-size="7" fill="white" opacity=".75">♻</text>
+</g>
+
+<!-- "PICKED" badge -->
+<g class="badge-f" transform="translate(140, 332)">
+  <rect width="48" height="18" rx="9" fill="#4CAF50"/>
+  <text x="24" y="13" text-anchor="middle" font-size="7.5" fill="white" font-weight="700">PICKED</text>
+</g>
+
+<!-- ═══════ MID-SECTION scenery ═══════ -->
+<g class="sway" transform="translate(40, 440)">
+  <rect x="9" y="32" width="8" height="36" fill="#6d4c41" rx="2"/>
+  <ellipse cx="13" cy="22" rx="20" ry="26" fill="#4caf50"/>
+  <ellipse cx="7" cy="30" rx="14" ry="18" fill="#388e3c"/>
+</g>
+<g class="sway" transform="translate(120, 468)">
+  <rect x="7" y="26" width="7" height="30" fill="#5d4037" rx="2"/>
+  <ellipse cx="10" cy="17" rx="16" ry="20" fill="#43a047"/>
+  <ellipse cx="15" cy="23" rx="11" ry="14" fill="#2e7d32"/>
+</g>
+<g class="sway" transform="translate(460, 450)">
+  <rect x="8" y="28" width="7" height="32" fill="#6d4c41" rx="2"/>
+  <ellipse cx="12" cy="18" rx="18" ry="22" fill="#43a047"/>
+  <ellipse cx="16" cy="25" rx="12" ry="15" fill="#2e7d32"/>
+</g>
+<g class="sway" transform="translate(550, 475)">
+  <rect x="6" y="22" width="6" height="28" fill="#5d4037" rx="2"/>
+  <ellipse cx="9" cy="14" rx="14" ry="17" fill="#4caf50"/>
+</g>
+<ellipse cx="30" cy="530" rx="16" ry="9" fill="#66bb6a" opacity=".6"/>
+<ellipse cx="160" cy="550" rx="12" ry="7" fill="#43a047" opacity=".5"/>
+<ellipse cx="440" cy="538" rx="14" ry="8" fill="#66bb6a" opacity=".55"/>
+<ellipse cx="580" cy="525" rx="11" ry="6.5" fill="#388e3c" opacity=".5"/>
+
+<!-- Street lamps -->
+<g transform="translate(198, 510)" opacity=".55">
+  <rect x="0" y="0" width="3" height="50" fill="#78909c" rx="1"/>
+  <ellipse cx="1.5" cy="-2" rx="7" ry="3.5" fill="#90a4ae"/>
+  <circle cx="1.5" cy="-1" r="3" fill="#fff9c4" opacity=".4"/>
+</g>
+<g transform="translate(399, 610)" opacity=".55">
+  <rect x="0" y="0" width="3" height="50" fill="#78909c" rx="1"/>
+  <ellipse cx="1.5" cy="-2" rx="7" ry="3.5" fill="#90a4ae"/>
+  <circle cx="1.5" cy="-1" r="3" fill="#fff9c4" opacity=".4"/>
+</g>
+
+<!-- ═══════════════════════════════════════════════
+     STOP 2 — HOME (right side)
+     ═══════════════════════════════════════════════ -->
+<g filter="url(#sh)">
+  <rect x="418" y="680" width="160" height="125" fill="#f2c6a0" rx="5"/>
+  <rect x="423" y="685" width="150" height="115" fill="#f7d6b8" rx="4"/>
+  <polygon points="410,680 498,610 586,680" fill="#c75b39"/>
+  <polygon points="418,680 498,620 578,680" fill="#d4734e"/>
+  <rect x="540" y="632" width="14" height="48" fill="#a0503a" rx="2"/>
+  <rect x="436" y="705" width="30" height="28" fill="#e3f2fd" rx="3" stroke="#90caf9" stroke-width="1.5"/>
+  <line x1="451" y1="705" x2="451" y2="733" stroke="#90caf9" stroke-width=".8"/>
+  <line x1="436" y1="719" x2="466" y2="719" stroke="#90caf9" stroke-width=".8"/>
+  <rect x="530" y="705" width="30" height="28" fill="#e3f2fd" rx="3" stroke="#90caf9" stroke-width="1.5"/>
+  <line x1="545" y1="705" x2="545" y2="733" stroke="#90caf9" stroke-width=".8"/>
+  <line x1="530" y1="719" x2="560" y2="719" stroke="#90caf9" stroke-width=".8"/>
+  <circle cx="498" cy="652" r="12" fill="#e3f2fd" stroke="#90caf9" stroke-width="1.5"/>
+  <line x1="498" y1="640" x2="498" y2="664" stroke="#90caf9" stroke-width=".8"/>
+  <line x1="486" y1="652" x2="510" y2="652" stroke="#90caf9" stroke-width=".8"/>
+  <rect x="480" y="750" width="34" height="50" fill="#5d4037" rx="3"/>
+  <circle cx="506" cy="776" r="2.5" fill="#fdd835"/>
+  <rect x="475" y="800" width="44" height="5" fill="#795548" rx="1"/>
+  <rect x="433" y="733" width="36" height="5" fill="#6d4c41" rx="1.5"/>
+  <circle cx="441" cy="731" r="3.5" fill="#e91e63"/>
+  <circle cx="451" cy="730" r="3" fill="#ff5252"/>
+  <circle cx="461" cy="731" r="3.5" fill="#e91e63"/>
+  <line x1="441" y1="731" x2="441" y2="738" stroke="#4caf50" stroke-width="1"/>
+  <line x1="451" y1="730" x2="451" y2="738" stroke="#4caf50" stroke-width="1"/>
+  <line x1="461" y1="731" x2="461" y2="738" stroke="#4caf50" stroke-width="1"/>
+</g>
+
+<g opacity=".45">
+  <line x1="414" y1="805" x2="414" y2="789" stroke="#8d6e63" stroke-width="2"/>
+  <line x1="428" y1="805" x2="428" y2="789" stroke="#8d6e63" stroke-width="2"/>
+  <line x1="410" y1="794" x2="432" y2="794" stroke="#8d6e63" stroke-width="1.5"/>
+  <line x1="564" y1="805" x2="564" y2="789" stroke="#8d6e63" stroke-width="2"/>
+  <line x1="578" y1="805" x2="578" y2="789" stroke="#8d6e63" stroke-width="2"/>
+  <line x1="560" y1="794" x2="582" y2="794" stroke="#8d6e63" stroke-width="1.5"/>
+</g>
+
+<g class="sway" transform="translate(585, 660)">
+  <rect x="7" y="42" width="9" height="52" fill="#5d4037" rx="3"/>
+  <ellipse cx="12" cy="26" rx="24" ry="30" fill="#388e3c"/>
+  <ellipse cx="5" cy="36" rx="17" ry="21" fill="#43a047"/>
+  <ellipse cx="20" cy="31" rx="15" ry="19" fill="#2e7d32"/>
+</g>
+
+<rect x="445" y="650" width="108" height="24" rx="12" fill="#bf360c" opacity=".85"/>
+<text x="499" y="666" text-anchor="middle" font-size="10" fill="white" font-weight="600" letter-spacing=".8">🏠 RESIDENTIAL</text>
+
+<!-- Stop 2 marker on sidewalk -->
+<circle cx="399" cy="760" r="6" fill="#4488cc" stroke="white" stroke-width="1.5"/>
+<text x="399" y="763" text-anchor="middle" font-size="7" fill="white" font-weight="700">2</text>
+
+<!-- Pulse ring (truck lane x=253) -->
+<circle class="ring-h" cx="253" cy="760" r="18" fill="none" stroke="#4CAF50" stroke-width="2.5"/>
+
+<!-- Home waste bin — right sidewalk edge -->
+<g class="home-bin-anim" transform="translate(392, 738)">
+  <rect x="0" y="6" width="20" height="26" fill="#4488cc" rx="3"/>
+  <rect x="-2" y="3" width="24" height="5" fill="#336699" rx="2"/>
+  <rect x="-2" y="29" width="24" height="4" fill="#336699" rx="1"/>
+  <ellipse cx="10" cy="5" rx="8" ry="3.5" fill="#a5d6a7"/>
+  <rect x="4" y="-1" width="3" height="6" fill="#81c784" rx="1"/>
+  <rect x="13" y="0" width="3.5" height="5.5" fill="#66bb6a" rx="1"/>
+  <text x="10" y="22" text-anchor="middle" font-size="7" fill="white" opacity=".75">♻</text>
+</g>
+
+<g class="badge-h" transform="translate(410, 725)">
+  <rect width="48" height="18" rx="9" fill="#4CAF50"/>
+  <text x="24" y="13" text-anchor="middle" font-size="7.5" fill="white" font-weight="700">PICKED</text>
+</g>
+
+<!-- ═══════════════════════════════════════════════
+     WASTE PICKUP TRUCK — TOP-DOWN VIEW
+     
+     MATH:
+       Left lane center = (208 + 298) / 2 = 253
+       Truck body width = 56px (internal coords 0→56)
+       translate X = 253 - 28 = 225
+       → truck left  edge = 225 (road starts 208) ✓ inside road
+       → truck right edge = 281 (center line 300) ✓ inside left lane
+       → truck center      = 253 = left lane center ✓
+     
+     Y anchor = 310, factory bin at y≈365
+     translateY(0) → truck nose at 310, center at ~365
+     translateY(400) → truck center at ~765 (home bin at y≈760)
+     ═══════════════════════════════════════════════ -->
+<g transform="translate(225, 310)"><g class="truck">
+  <g class="truck-chassis">
+    <!-- Shadow -->
+    <rect x="4" y="5" width="50" height="108" rx="6" fill="#000" opacity=".12"/>
+
+    <!-- REAR CONTAINER -->
+    <rect x="3" y="48" width="52" height="60" rx="4" fill="#2a7a3c"/>
+    <rect x="6" y="51" width="46" height="54" rx="3" fill="#3a9e50"/>
+    <line x1="6" y1="64" x2="52" y2="64" stroke="#2a7a3c" stroke-width="1" opacity=".45"/>
+    <line x1="6" y1="78" x2="52" y2="78" stroke="#2a7a3c" stroke-width="1" opacity=".45"/>
+    <line x1="6" y1="92" x2="52" y2="92" stroke="#2a7a3c" stroke-width="1" opacity=".45"/>
+    <rect x="9" y="66" width="40" height="11" rx="2" fill="#1b5e20" opacity=".55"/>
+    <text x="29" y="74.5" text-anchor="middle" font-size="5.5" fill="#c8e6c9" font-weight="700" letter-spacing=".8">CLEAN CITY</text>
+    <text x="29" y="92" text-anchor="middle" font-size="11" fill="#c8e6c9" opacity=".45">♻</text>
+    <!-- Rear bumper + reflectors -->
+    <rect x="1" y="106" width="56" height="5" rx="2" fill="#455a64"/>
+    <rect x="6" y="107" width="6" height="3" rx="1" fill="#ef5350" opacity=".7"/>
+    <rect x="46" y="107" width="6" height="3" rx="1" fill="#ef5350" opacity=".7"/>
+
+    <!-- Waste fill -->
+    <g class="fill-1">
+      <rect x="9" y="82" width="16" height="9" fill="#795548" rx="2" opacity=".6" transform="rotate(-4 17 86)"/>
+      <rect x="30" y="84" width="13" height="7" fill="#8d6e63" rx="1" opacity=".55"/>
+    </g>
+    <g class="fill-2">
+      <rect x="13" y="54" width="11" height="9" fill="#a5d6a7" rx="2" opacity=".55" transform="rotate(3 18 58)"/>
+      <rect x="33" y="56" width="9" height="7" fill="#81c784" rx="1" opacity=".5"/>
+    </g>
+
+    <!-- CABIN -->
+    <rect x="3" y="2" width="52" height="44" rx="9" fill="url(#tCab)" opacity=".5"/>
+    <rect x="5" y="4" width="48" height="40" rx="8" fill="url(#tCab)"/>
+    <!-- Windshield -->
+    <rect x="10" y="28" width="38" height="13" rx="4" fill="#bbdefb" opacity=".7"/>
+    <rect x="12" y="30" width="34" height="9" rx="3" fill="#e3f2fd" opacity=".5"/>
+    <!-- Roof -->
+    <rect x="16" y="9" width="26" height="11" rx="3" fill="#4caf50" opacity=".35"/>
+    <!-- Warning lights -->
+    <rect x="12" y="2" width="34" height="6" rx="3" fill="#455a64"/>
+    <circle class="hazard" cx="21" cy="5" r="2.5" fill="#ff9800"/>
+    <circle class="hazard" cx="37" cy="5" r="2.5" fill="#ff9800" style="animation-delay:.35s"/>
+    <!-- Mirrors -->
+    <rect x="-4" y="18" width="7" height="10" rx="2.5" fill="#546e7a"/>
+    <rect x="55" y="18" width="7" height="10" rx="2.5" fill="#546e7a"/>
+    <!-- Headlights -->
+    <rect x="8" y="39" width="8" height="4" rx="2" fill="#fff176"/>
+    <rect x="42" y="39" width="8" height="4" rx="2" fill="#fff176"/>
+  </g>
+
+  <!-- WHEELS -->
+  <rect x="-4" y="10" width="7" height="20" rx="3.5" fill="#37474f"/>
+  <rect x="-3" y="12" width="5" height="16" rx="2.5" fill="#546e7a" class="wheel-roll" stroke="#78909c" stroke-width=".5" stroke-dasharray="3 3"/>
+  <rect x="55" y="10" width="7" height="20" rx="3.5" fill="#37474f"/>
+  <rect x="56" y="12" width="5" height="16" rx="2.5" fill="#546e7a" class="wheel-roll" stroke="#78909c" stroke-width=".5" stroke-dasharray="3 3"/>
+  <rect x="-4" y="84" width="7" height="22" rx="3.5" fill="#37474f"/>
+  <rect x="-3" y="86" width="5" height="18" rx="2.5" fill="#546e7a" class="wheel-roll" stroke="#78909c" stroke-width=".5" stroke-dasharray="3 3"/>
+  <rect x="55" y="84" width="7" height="22" rx="3.5" fill="#37474f"/>
+  <rect x="56" y="86" width="5" height="18" rx="2.5" fill="#546e7a" class="wheel-roll" stroke="#78909c" stroke-width=".5" stroke-dasharray="3 3"/>
+</g>
+</g>
+
+<!-- ═══════ LOWER SCENERY ═══════ -->
+<g class="sway" transform="translate(60, 850)">
+  <rect x="7" y="30" width="7" height="32" fill="#5d4037" rx="2"/>
+  <ellipse cx="10" cy="20" rx="16" ry="20" fill="#43a047"/>
+  <ellipse cx="15" cy="27" rx="11" ry="14" fill="#2e7d32"/>
+</g>
+<ellipse cx="520" cy="880" rx="14" ry="7.5" fill="#66bb6a" opacity=".45"/>
+<ellipse cx="80" cy="910" rx="10" ry="6" fill="#4caf50" opacity=".4"/>
+
+<g transform="translate(196, 890)" opacity=".7">
+  <rect x="0" y="4" width="10" height="16" fill="#f44336" rx="3"/>
+  <rect x="-2" y="2" width="14" height="3.5" fill="#d32f2f" rx="1.5"/>
+  <circle cx="5" cy="0" r="3.5" fill="#ef5350"/>
+</g>
+
+<!-- ═══════ FOOTER ═══════ -->
+<rect x="0" y="1140" width="650" height="60" fill="#2E7D32" opacity=".88"/>
+<text x="325" y="1170" text-anchor="middle" font-size="9.5" fill="#C8E6C9" font-weight="400" letter-spacing="2">REDUCING WASTE • BUILDING FUTURE • CLEAN PLANET</text>
+
+</svg>
+</div>
+</body>
+</html>
