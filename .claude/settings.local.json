@@ -13,7 +13,9 @@
       "Bash(sed -n '25,26p' /e/delve-landing/src/components/Platform.tsx)",
       "Bash(sed -n '21,22p' /e/delve-landing/src/components/Results.tsx)",
       "Bash(xargs grep *)",
-      "Bash(find *)"
+      "Bash(find *)",
+      "Bash(xargs -I{} git cat-file -s :{})",
+      "Bash(xargs '-d\\\\n' '-I{}' sh -c 'size=$\\(git cat-file -s \":$1\" 2>/dev/null\\); echo \"$size $1\"' _ '{}')"
     ]
   }
 }

@@ -5,8 +5,8 @@ import { MessageCircle, Phone, X, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CONTACT_NUMBERS = [
-  { label: "Primary", number: "+91 98711 83680", clean: "919871183680" },
-  { label: "Secondary", number: "+91 98379 07080", clean: "919837907080" },
+  { label: "Specialist", number: "+91 98711 83680", clean: "919871183680" },
+  { label: "Sales Executive", number: "+91 98379 07080", clean: "919837907080" },
 ];
 
 export default function FloatingContact() {
@@ -38,7 +38,7 @@ export default function FloatingContact() {
               {CONTACT_NUMBERS.map((contact) => (
                 <div key={contact.number} className="flex flex-col gap-2">
                   <span className="text-[10px] font-medium text-white/30 uppercase tracking-tight">
-                    {contact.label} Number
+                    {contact.label}
                   </span>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-white font-semibold text-[14px]">
